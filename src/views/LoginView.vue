@@ -22,8 +22,8 @@
 <script setup>
 // OAuth 로그인 엔드포인트 맵
 const oauthUrls = {
-  kakao: '/oauth2/authorization/kakao',
-  naver: '/oauth2/authorization/naver'
+  kakao: 'http://localhost:8082/oauth2/authorization/kakao',
+  naver: 'http://localhost:8082/oauth2/authorization/naver'
 }
 function login(provider) {
   window.location.href = oauthUrls[provider]

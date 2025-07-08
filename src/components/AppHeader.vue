@@ -1,38 +1,39 @@
 <template>
   <header class="app-header">
     <div class="logo">
-      <img src="../assets/logo.png" alt="로고" />
+      <a href="/">
+        <img src="@/assets/logo.png" alt="로고" />
+      </a>
     </div>
-    <nav class="nav-links">
-      <button v-if="!props.isLoggedIn" @click="onLogin" class="btn-login">
-        로그인/회원가입
-      </button>
-      <button v-else @click="onLogout" class="btn-mypage">
-        마이페이지
-      </button>
-    </nav>
+      <nav class="nav-links">
+        <button v-if="!isLoggedIn" @click="onLogin" class="btn-login">
+          로그인/회원가입
+        </button>
+        <button v-else @click="onLogout" class="btn-logout">
+          로그아웃
+        </button>
+        <button v-if="isLoggedIn" @click="goToMyPage" class="btn-mypage">
+          마이페이지
+        </button>
+      </nav>
   </header>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/userStore'
 
-// Reactive props for login state
-const props = defineProps({
-  isLoggedIn: { type: Boolean, default: false }
-})
-const emit = defineEmits(['logout-clicked'])
-const router = useRouter()
+const router    = useRouter()
+const userStore = useUserStore()
 
-function onLogin() {
-  // 로그인 페이지로 이동
-  router.push('/login')
-}
+const isLoggedIn = computed(() => !!userStore.user?.userId)
+const userName   = computed(() => userStore.user?.userName || '')
+const userJob    = computed(() => userStore.user?.jobClassCode || '')
 
-function onLogout() {
-  emit('logout-clicked')
-}
+function onLogin()  { router.push('/login') }
+function onLogout() { userStore.logout() }
+function goToMyPage(){ router.push('/mypage') }
 </script>
 
 <style scoped>
@@ -53,6 +54,12 @@ function onLogout() {
   vertical-align: middle;
 }
 
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .nav-links button {
   background-color: #607d8b;
   color: white;
@@ -69,6 +76,14 @@ function onLogout() {
   background-color: #4caf50;
 }
 
+.nav-links .btn-logout {
+  background-color: #f44336;
+}
+
+.nav-links .btn-mypage {
+  background-color: #42a5f5;
+}
+
 .nav-links button:hover {
   transform: translateY(-2px);
 }
@@ -77,7 +92,11 @@ function onLogout() {
   background-color: #388e3c;
 }
 
+.nav-links .btn-logout:hover {
+  background-color: #d32f2f;
+}
+
 .nav-links .btn-mypage:hover {
-  background-color: #455a64;
+  background-color: #1e88e5;
 }
 </style>

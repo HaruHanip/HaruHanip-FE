@@ -5,129 +5,189 @@
       @login-clicked="handleLogin"
       @logout-clicked="handleLogout"
     />
+
     <main class="content-area">
       <div class="problem-solving">
-        <!-- 1) 카테고리 고르면 첫 문제 로드 -->
-        <CategorySelect
-          v-if="!selectedCategory"
-          :categories="categories"
-          @select="selectCategory"
-        />
+        <!-- 1) 카테고리 선택 -->
+        <div v-if="!selectedCategory" key="category">
+          <CategorySelect
+            :categories="categories"
+            @select="selectCategory"
+          />
+        </div>
 
-        <!-- 2) 문제 풀기 화면 -->
-        <QuestionView
-          v-else-if="!showResult && currentQuestion"
-          :question="currentQuestion"
-          :index="currentIndex"
-          :total="total"
-          @submit="handleSubmit"
-        />
+        <!-- 2) 문제 풀이 -->
+        <div
+          v-else-if="!quizFinished && !showResult && currentQuestion"
+          :key="`question-${currentIndex}`"
+        >
+          <QuestionView
+            :question="currentQuestion"
+            :index="currentIndex"
+            :total="TOTAL_QUESTIONS"
+            @submit="onSubmit"
+          />
+        </div>
 
         <!-- 3) 결과 보기 -->
-        <ResultView
-          v-else-if="showResult"
-          :isCorrect="isCorrect"
-          :correct="correctAnswer"
-          :explanation="explanation"
-          @next="nextQuestion"
-        />
+        <div
+          v-else-if="!quizFinished && showResult"
+          :key="`result-${currentIndex}`"
+        >
+          <ResultView
+            :isCorrect="isCorrect"
+            :correct="correctAnswer"
+            :explanation="explanation"
+            @next="onNext"
+          />
+        </div>
 
-        <!-- 4) 모두 끝나면 요약 -->
-        <SummaryView
-          v-else
-          :correctCount="correctCount"
-          :total="total"
-          @restart="restart"
-        />
+        <!-- 4) 요약 화면 -->
+        <div v-else key="summary">
+          <SummaryView
+            :correctCount="correctCount"
+            :total="TOTAL_QUESTIONS"
+            @home="onHome"
+          />
+        </div>
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import axios from '../api/axiosInstance'
-import Header             from '../components/AppHeader.vue'
-import CategorySelect     from '../components/ProblemCategorySelect.vue'
-import QuestionView       from '../components/QuestionView.vue'
-import ResultView         from '../components/ResultView.vue'
-import SummaryView        from '../components/SummaryView.vue'
+import { ref, onMounted } from 'vue'
+import Header         from '../components/AppHeader.vue'
+import CategorySelect from '../components/ProblemCategorySelect.vue'
+import QuestionView   from '../components/QuestionView.vue'
+import ResultView     from '../components/ResultView.vue'
+import SummaryView    from '../components/SummaryView.vue'
 
-const isLoggedIn      = ref(false)
-const categories      = ['자료구조','알고리즘','네트워크','OS','DB']
-const selectedCategory= ref('')
-const currentQuestion = ref(null)
-const currentIndex    = ref(0)
-const total           = ref(0)
-const correctCount    = ref(0)
-const showResult      = ref(false)
-const isCorrect       = ref(false)
-const correctAnswer   = ref('')
-const explanation     = ref('')
+import { fetchCategories }        from '../api/category'
+import { loadNextQuestion, submitAnswer } from '../api/problem'
+import { loadTodayDailyId, loadDailyResult }       from '../api/daily'
+import router from '@/router'
+
+const TOTAL_QUESTIONS = 10
+
+const isLoggedIn       = ref(false)
+const categories       = ref([])
+const selectedCategory = ref(null)
+const todayDaily       = ref(null)
+
+const currentQuestion  = ref(null)
+const currentIndex     = ref(0)      // 1부터 TOTAL까지
+const correctCount     = ref(0)
+const showResult       = ref(false)
+const isCorrect        = ref(false)
+const correctAnswer    = ref('')
+const explanation      = ref('')
+const currentDailyProblemId = ref(0)
+
+// 전체 퀴즈가 끝나면 true
+const quizFinished     = ref(false)
 
 function handleLogin()  { isLoggedIn.value = true }
 function handleLogout() { isLoggedIn.value = false }
 
-// 1) 카테고리 선택 → 1번 문제 로드
-function selectCategory(cat) {
-  selectedCategory.value = cat
-  currentIndex.value = 1
-  loadQuestion(currentIndex.value)
+// 1) 처음에 카테고리만 불러오기
+onMounted(async () => {
+  categories.value = await fetchCategories()
+})
+
+// 2) 카테고리 선택 시 초기화 + 1번 질문 로드
+async function selectCategory(cat) {
+    // 1) 선택된 카테고리 ID 저장
+    selectedCategory.value = cat.categoryId
+
+    // 2) loadTodayDailyId가 비동기라면 반드시 await
+    //    예: res.data = { dailyId: 42, ... }
+    const daily = await loadTodayDailyId(cat.categoryId)
+    // 3) todayDaily에는 숫자 ID만 담아두기
+    todayDaily.value = daily.dailyId
+
+    // 4) 인덱스/상태 초기화
+    currentIndex.value = 1
+    correctCount.value = 0
+    quizFinished.value = false
+    showResult.value   = false
+    loadQuestion()
 }
 
-// 서버에서 한 문제만 가져오기
-async function loadQuestion(idx) {
+// 3) 문제 불러오는 함수 — INDEX 체크 후 API 호출
+async function loadQuestion() {
+  // 1) MAX 초과 체크
+  if (currentIndex.value > TOTAL_QUESTIONS) {
+    quizFinished.value = true
+    return
+  }
+
   try {
-    const res = await axios.get('/api/questions/next', {
-      params: { category: selectedCategory.value, index: idx }
+    // 2) 전체 response 객체를 받아서…
+    const res = await loadNextQuestion(todayDaily.value)
+
+    console.log(res);
+    
+
+    // 3) 에러 코드가 아닌, 의도된 "끝" 신호도 2xx로 내려준다고 가정
+    if (res.data.code === "NO_MORE_DAILY") {
+      // 끝
+      const { data: result } = await loadDailyResult(todayDaily.value)
+      correctCount.value   = result.score
+      quizFinished.value   = true
+      showResult.value     = true
+    }
+    else {
+      // 다음 문제
+      const { dailyProblemId, sequence, problem } = res.data
+      currentDailyProblemId.value = dailyProblemId
+      currentQuestion.value       = problem
+      showResult.value            = false
+    }
+  }
+  catch (err) {
+    // 정말 예측 못 한 에러
+    console.error('문제 로드 실패', err)
+  }
+}
+
+// 4) 답 제출
+async function onSubmit(selectedOptionIndex) {
+  // 1) 클라이언트에서 정답 여부 판단
+  console.log(currentQuestion.value.problemId);
+  
+  const ok = selectedOptionIndex === currentQuestion.value.correctOption
+  isCorrect.value     = ok
+  correctAnswer.value = currentQuestion.value.correctOption
+  explanation.value   = currentQuestion.value.explanation
+
+  if (ok) correctCount.value++
+
+  // 2) 화면에 결과 보여주기
+  showResult.value = true
+
+  // 3) 서버에 응답 기록만 전송
+  try {
+    console.log(currentDailyProblemId);
+    
+    await submitAnswer({
+      problemId: currentDailyProblemId.value,
+      selectedOptionIndex,
+      isCorrect: ok
     })
-    // 서버 응답: { question: { id,text,options,answer,explanation }, totalProblems: number }
-    currentQuestion.value = res.data.question
-    total.value           = res.data.totalProblems
-    showResult.value      = false
-  } catch (e) {
-    console.error('문제 로드 실패', e)
+  } catch (err) {
+    console.error('정답 제출 기록 실패', err)
   }
 }
 
-// 2) 사용자가 선택지를 클릭하면
-async function handleSubmit(answer) {
-  try {
-    const res = await axios.post(
-      `/api/questions/${currentQuestion.value.id}/answer`,
-      { answer }
-    )
-    // 서버 응답: { isCorrect, correctAnswer, explanation }
-    isCorrect.value     = res.data.isCorrect
-    correctAnswer.value = res.data.correctAnswer
-    explanation.value   = res.data.explanation
-    if (isCorrect.value) correctCount.value++
-    showResult.value    = true
-  } catch (e) {
-    console.error('정답 제출 실패', e)
-  }
+// 5) 다음 문제
+function onNext() {
+  currentIndex.value++
+  loadQuestion()
 }
 
-// 3) 다음 문제로
-function nextQuestion() {
-  if (currentIndex.value < total.value) {
-    currentIndex.value++
-    loadQuestion(currentIndex.value)
-  } else {
-    // 모두 끝
-    currentQuestion.value = null
-  }
-}
-
-// 4) 처음으로 돌아가기
-function restart() {
-  selectedCategory.value = ''
-  currentIndex.value     = 0
-  correctCount.value     = 0
-  showResult.value       = false
+// 6) 다시 시작 (카테고리 선택 화면으로)
+function onHome() {
+  router.push("/")
 }
 </script>
-
-<style scoped>
-/* (기존 스타일 그대로) */
-</style>

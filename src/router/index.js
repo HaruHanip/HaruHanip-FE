@@ -11,6 +11,11 @@ const routes = [
     name: 'LoginPage',
     component: () => import('@/views/LoginView.vue')
   },
+  { 
+    path: '/oauth2/callback',
+    name: 'CallBack',
+    component: () => import('@/views/OAuthCallback.vue')
+  },
   {
     path: '/problem',
     name: 'ProblemSolvingPage',

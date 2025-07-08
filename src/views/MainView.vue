@@ -2,7 +2,7 @@
 <template>
   <div class="main-screen">
     <!-- 헤더 컴포넌트: 로고와 로그인/마이페이지 버튼이 있어요! -->
-    <Header :isLoggedIn="isLoggedIn" @login-clicked="handleLogin" @logout-clicked="handleLogout" />
+    <Header :isLoggedIn="isLoggedIn" />
 
     <main class="content-area">
       <!-- 챌린지 요약 카드: 지금 챌린지를 얼마나 잘하고 있는지 보여줘요! -->
@@ -47,7 +47,6 @@ export default {
   },
   data() {
     return {
-      isLoggedIn: false,
       challengeStatus: '연속 3일 성공 중',
       friendsList: [
     //    { name: '친구1', streak: 5 }, { name: '친구2', streak: 3 },
@@ -55,14 +54,6 @@ export default {
     };
   },
   methods: {
-    handleLogin() {
-      this.isLoggedIn = true;
-      console.log('로그인 버튼 클릭!');
-    },
-    handleLogout() {
-      this.isLoggedIn = false;
-      console.log('로그아웃 버튼 클릭!');
-    },
     goToProblemSolving() {
       console.log('오늘의 문제 풀러 가자!');
     },

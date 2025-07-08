@@ -2,7 +2,14 @@
   <div class="category-select">
     <h2>문제 분야를 선택하세요</h2>
     <ul>
-      <li v-for="cat in props.categories" :key="cat" @click="select(cat)">{{ cat }}</li>
+      <li
+        v-for="cat in categories"
+        :key="cat.id"
+        @click="$emit('select', cat)"
+        class="category-item"
+      >
+        {{ cat.name }}
+      </li>
     </ul>
   </div>
 </template>
