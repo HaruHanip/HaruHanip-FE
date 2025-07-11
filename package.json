@@ -15,7 +15,8 @@
     "pinia-plugin-persistedstate": "^4.4.1",
     "vite": "^4.0.0",
     "vue": "^3.2.13",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "vue3-calendar-heatmap": "^2.0.5"
   },
   "devDependencies": {
     "eslint": "^7.32.0",

@@ -141,6 +141,7 @@ async function loadQuestion() {
       // 다음 문제
       const { dailyProblemId, sequence, problem } = res.data
       currentDailyProblemId.value = dailyProblemId
+      currentIndex.value = sequence
       currentQuestion.value       = problem
       showResult.value            = false
     }

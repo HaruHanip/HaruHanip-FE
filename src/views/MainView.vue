@@ -1,4 +1,4 @@
-<!-- MainScreen.vue -->
+<!-- src/views/MainScreen.vue -->
 <template>
   <div class="main-screen">
     <!-- 헤더 컴포넌트: 로고와 로그인/마이페이지 버튼이 있어요! -->
@@ -15,14 +15,15 @@
       <!-- 오늘의 문제 풀기 버튼: 매일매일 새로운 문제를 풀러 가볼까요? -->
       <TodaysProblemCTA @start-problem="goToProblemSolving" />
 
-     <!-- 로그인 여부에 따라 비회원 메시지 ↔ 친구 랭킹 -->
-     <div v-if="!isLoggedIn" class="non-member-message">
-       <p>기록을 남기고 싶다면 로그인하세요! ✨</p>
-       <button @click="handleLogin">로그인/회원가입</button>
-     </div>
-     <div v-else class="friend-ranking">
-       <FriendRanking :friends="friendsList" />
-     </div>
+      <!-- 로그인 여부에 따라 비회원 메시지 ↔ 친구 랭킹 -->
+      <div v-if="!isLoggedIn" class="non-member-message">
+        <p>친구와 랭킹을 공유하고 싶다면 로그인하세요! ✨</p>
+        <button @click="handleLogin">로그인/회원가입</button>
+      </div>
+      <div v-else class="friend-ranking">
+        <FriendRanking :friends="friendsList" />
+      </div>
+
       <!-- 인터뷰 준비 모드 배너: 취업 준비생들을 위한 특별한 모드! -->
       <InterviewPrepBanner />
     </main>
@@ -30,11 +31,12 @@
 </template>
 
 <script>
-import Header from '../components/AppHeader.vue';
-import ChallengeSummaryCard from '../components/ChallengeSummaryCard.vue';
-import TodaysProblemCTA from '../components/TodayProblemCTA.vue';
-import InterviewPrepBanner from '../components/InterviewPrepBanner.vue';
+import Header from '../components/AppHeader.vue'
+import ChallengeSummaryCard from '../components/ChallengeSummaryCard.vue'
+import TodaysProblemCTA from '../components/TodayProblemCTA.vue'
+import InterviewPrepBanner from '../components/InterviewPrepBanner.vue'
 import FriendRanking from '../components/FriendRanking.vue'
+import { useUserStore } from '@/stores/userStore'
 
 export default {
   name: 'MainScreen',
@@ -48,60 +50,94 @@ export default {
   data() {
     return {
       challengeStatus: '연속 3일 성공 중',
-      friendsList: [
-    //    { name: '친구1', streak: 5 }, { name: '친구2', streak: 3 },
-     ],
-    };
+      friendsList: [],
+    }
   },
-  methods: {
-    goToProblemSolving() {
-      console.log('오늘의 문제 풀러 가자!');
+  computed: {
+    // Pinia store 인스턴스
+    userStore() {
+      return useUserStore()
     },
-    goToInterviewMode() {
-      console.log('인터뷰 준비 모드로 고고!');
+    // 로그인 여부
+    isLoggedIn() {
+      return this.userStore.isLoggedIn
+    },
+  },
+  watch: {
+    // 로그인 상태가 변하면 친구 목록 재조회
+    isLoggedIn(newVal) {
+      if (newVal) {
+        this.fetchFriends()
+      } else {
+        this.friendsList = []
+      }
     },
   },
   mounted() {
-    // 초기 로그인 상태 확인 로직
-  }
-};
+    // 마운트 시 이미 로그인 되어 있으면 친구 목록 로드
+    if (this.isLoggedIn) {
+      this.fetchFriends()
+    }
+  },
+  methods: {
+    // 친구 랭킹 API 호출
+    async fetchFriends() {
+      try {
+        this.friendsList = await this.userStore.fetchFriends()
+      } catch (err) {
+        console.error('친구 목록 로드 실패', err)
+      }
+    },
+    // 로그인/회원가입 처리 (모달 오픈 등)
+    handleLogin() {
+      console.log('로그인/회원가입 클릭')
+      // TODO: 로그인 모달 열기 또는 라우팅
+    },
+    goToProblemSolving() {
+      console.log('오늘의 문제 풀러 가자!')
+      // TODO: 라우터 push 등
+    },
+    goToInterviewMode() {
+      console.log('인터뷰 준비 모드로 고고!')
+      // TODO: 인터뷰 준비 모드로 이동
+    },
+  },
+}
 </script>
 
 <style scoped>
-/* ✨ 메인 화면 전체 스타일 ✨ */
 .main-screen {
-  font-family: 'Noto Sans KR', sans-serif; /* 더 예쁜 한글 폰트! */
+  font-family: 'Noto Sans KR', sans-serif;
   text-align: center;
   color: #333;
-  padding: 10px 20px; /* 위아래 여백을 좀 더 줘서 답답하지 않게! */
+  padding: 10px 20px;
   max-width: 80%;
   margin: 0 auto;
-  background-color: #f8f9fa; /* 아주 연한 회색 배경으로 부드럽게! */
-  min-height: 100vh; /* 화면 전체를 채우도록! */
-  box-sizing: border-box; /* 패딩이 너비에 포함되도록! */
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .content-area {
-  margin-top: 30px; /* 헤더와 간격을 좀 더 줘요 */
+  margin-top: 30px;
   display: flex;
   flex-direction: column;
-  gap: 25px; /* 컴포넌트들 사이 간격을 조금 더 넓게! */
+  gap: 25px;
 }
 
-/* 비회원 메시지 스타일 개선 */
 .non-member-message {
-  background-color: #ffe0b2; /* 따뜻한 오렌지 계열 색상! */
+  background-color: #ffe0b2;
   border: 1px solid #ffcc80;
   padding: 20px;
-  border-radius: 12px; /* 모서리를 더 둥글게! */
-  color: #e65100; /* 진한 오렌지색 글씨 */
+  border-radius: 12px;
+  color: #e65100;
   font-size: 1.1em;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 그림자 추가! */
-  transition: transform 0.3s ease; /* 부드러운 효과 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
 }
 
 .non-member-message:hover {
-  transform: translateY(-3px); /* 살짝 떠오르는 효과! */
+  transform: translateY(-3px);
 }
 
 .non-member-message p {
@@ -110,11 +146,11 @@ export default {
 }
 
 .non-member-message button {
-  background-color: #ff9800; /* 오렌지색 버튼! */
+  background-color: #ff9800;
   color: white;
   border: none;
   padding: 12px 25px;
-  border-radius: 25px; /* 알약 모양 버튼! */
+  border-radius: 25px;
   cursor: pointer;
   font-size: 1em;
   font-weight: bold;
@@ -122,8 +158,8 @@ export default {
 }
 
 .non-member-message button:hover {
-  background-color: #fb8c00; /* 호버 시 색상 진하게! */
-  transform: scale(1.02); /* 살짝 커지는 효과! */
+  background-color: #fb8c00;
+  transform: scale(1.02);
 }
 
 .friend-ranking {
