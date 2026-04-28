@@ -6,10 +6,9 @@
   </div>
 </template>
 
-<script setup>
-
+<script setup lang="ts">
 </script>
 
 <style>
-/* 전역 스타일 등 */
+@import '@/assets/main.css';
 </style>

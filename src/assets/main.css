@@ -1,0 +1,69 @@
+/* 전역 CSS 변수 */
+:root {
+  --color-primary: #4caf50;
+  --color-primary-dark: #388e3c;
+  --color-blue: #42a5f5;
+  --color-blue-dark: #1e88e5;
+  --color-danger: #f44336;
+  --color-text: #333333;
+  --color-text-muted: #555555;
+  --color-bg: #f8f9fa;
+  --color-white: #ffffff;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 15px;
+  --radius-pill: 25px;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.12);
+
+  /* 레이아웃 */
+  --page-padding-x: 20px;
+  --page-padding-x-mobile: 16px;
+}
+
+/* 기본 리셋 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.6;
+  min-height: 100dvh;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 스크롤바 스타일 (웹킷) */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
